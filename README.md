@@ -19,6 +19,11 @@ In the HackerOne UI this is the **"Last internal activity"** field, exposed in t
 `report_pending_party_last_activity`. It often moves days before any public reply appears,
 so it is an early signal that someone is actually looking at your report.
 
+<img src="docs/last-internal-activity.png" alt="HackerOne 'Last internal activity: 1 day ago' field with its exact timestamp on hover" width="320">
+
+This is the field on a HackerOne report. It updates silently, with no email and no
+notification, which is why the extension polls it for you.
+
 This extension exists to surface exactly that signal. It polls your reports, compares each
 one against the previous check, and notifies you when the internal activity timestamp moves,
 even when nothing public has happened yet. The same diff also catches `substate` changes and
