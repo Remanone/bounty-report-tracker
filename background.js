@@ -55,9 +55,12 @@ async function pageFetchReports() {
   if (me.__gql) return { error: me.__gql };
   if (!me || !me.me) return { error: "Invalid session (me == null). Sign in to HackerOne." };
 
+  // latest_activity_at is always null on H1's API; latest_public_activity_at holds the
+  // real "last public activity" value. Aliased so the rest of the code is untouched.
   const q = "query Tracker($rid: Int!) {" +
     " reports(first: 100, where: { reporter: { id: { _eq: $rid } } }) {" +
-    " edges { node { _id title substate url submitted_at latest_activity_at" +
+    " edges { node { _id title substate url submitted_at" +
+    " latest_activity_at: latest_public_activity_at" +
     " report_pending_party_last_activity team { handle name } } } } }";
   const rid = parseInt(me.me._id, 10);
   const data = await gql(q, { rid });
