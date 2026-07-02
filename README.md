@@ -15,14 +15,12 @@ reason to exist is **internal activity**.
 
 <table align="center" width="100%">
   <tr>
-    <td align="center" width="33%"><b>HackerOne</b></td>
-    <td align="center" width="33%"><b>Bugcrowd</b></td>
-    <td align="center" width="33%"><b>HackerOne + Bugcrowd</b></td>
+    <td align="center" width="50%"><b>HackerOne + Bugcrowd</b></td>
+    <td align="center" width="50%"><b>If you pick just one</b></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/popup-hackerone.png" alt="Popup filtered to HackerOne reports" width="100%"></td>
-    <td align="center"><img src="docs/popup-bugcrowd.png" alt="Popup filtered to Bugcrowd reports" width="100%"></td>
     <td align="center"><img src="docs/popup-both.png" alt="Popup showing both HackerOne and Bugcrowd reports" width="100%"></td>
+    <td align="center"><img src="docs/popup-bugcrowd.png" alt="Popup with a single platform selected" width="100%"></td>
   </tr>
 </table>
 
