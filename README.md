@@ -4,8 +4,6 @@
 
 <h1 align="center">Bounty Report Tracker</h1>
 
-<p align="center">A Chrome extension for HackerOne and Bugcrowd, built around internal activity. Fully local and privacy-safe.</p>
-
 A Chrome extension that watches your **HackerOne** and **Bugcrowd** reports and alerts
 you when their status changes. Track one platform or both, from a single popup. Its main
 reason to exist is **internal activity**.
