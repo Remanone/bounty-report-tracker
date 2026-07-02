@@ -1,6 +1,6 @@
 // Shared display helpers (used by both popup and background).
-// The actual GraphQL fetch lives in background.js as pageFetchReports(),
-// which runs inside a hackerone.com tab (same origin).
+// The actual data fetch lives in providers.js as self-contained pageFetch()
+// functions, each injected into its platform's own tab (same origin).
 
 // Calendar-day difference (local), matching the UI "N days ago" display.
 export function daysAgo(iso) {
@@ -21,9 +21,10 @@ export function relLabel(iso) {
   return d + " days ago";
 }
 
-// Human-readable substate label.
+// Human-readable substate label, across both platforms.
 export function substateLabel(s) {
   const map = {
+    // HackerOne
     "new": "New",
     "pending-program-review": "Pending program review",
     "triaged": "Triaged",
@@ -32,7 +33,22 @@ export function substateLabel(s) {
     "informative": "Informative",
     "not-applicable": "Not applicable",
     "duplicate": "Duplicate",
-    "spam": "Spam"
+    "spam": "Spam",
+    // Bugcrowd (normalized: underscores replaced by hyphens)
+    "unresolved": "Unresolved",
+    "informational": "Informational",
+    "out-of-scope": "Out of scope",
+    "not-reproducible": "Not reproducible",
+    "wont-fix": "Won't fix"
   };
   return map[s] || s;
+}
+
+// Short badge and display name per platform.
+export function platformBadge(id) {
+  return id === "bugcrowd" ? "BC" : "H1";
+}
+
+export function platformName(id) {
+  return id === "bugcrowd" ? "Bugcrowd" : "HackerOne";
 }

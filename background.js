@@ -1,22 +1,34 @@
-// Service worker: periodic check + diff + notifications.
-// The GraphQL fetch runs INSIDE a hackerone.com tab (same origin) via
-// chrome.scripting.executeScript, because HackerOne returns 403 for /graphql
-// requests originating from the extension origin.
-import { relLabel, substateLabel } from "./h1.js";
+// Service worker: periodic check + diff + notifications, across platforms.
+// Each provider's fetch runs INSIDE a tab on that platform's own origin (same
+// origin) via chrome.scripting.executeScript, because the sites reject API calls
+// coming from the extension origin.
+import { relLabel, substateLabel, platformBadge } from "./h1.js";
+import { providersFor, DEFAULT_PLATFORMS } from "./providers.js";
 
 const ALARM = "h1-check";
 const DEFAULT_PERIOD_MIN = 60;
 
+// Version marker: if you see this in the service worker console, the new code is
+// running and any old error in the errors panel is a stale cached entry.
+console.log("Bounty Report Tracker service worker loaded: v1.4.1");
+
+// Fire-and-forget checks: swallow the rejection so a platform that is simply not
+// logged in does not surface as an uncaught error in the extensions panel. The
+// real reason is stored in lastError and shown in the popup.
+function backgroundCheck() {
+  check().catch(e => console.debug("Background check failed:", String(e && e.message || e)));
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   const { periodMin } = await chrome.storage.local.get("periodMin");
   chrome.alarms.create(ALARM, { periodInMinutes: periodMin || DEFAULT_PERIOD_MIN });
-  check();
+  backgroundCheck();
 });
 
-chrome.runtime.onStartup.addListener(() => check());
+chrome.runtime.onStartup.addListener(() => backgroundCheck());
 
 chrome.alarms.onAlarm.addListener(a => {
-  if (a.name === ALARM) check();
+  if (a.name === ALARM) backgroundCheck();
 });
 
 // Lets the popup trigger a check and get the result.
@@ -26,87 +38,75 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
            .catch(e => sendResponse({ ok: false, error: String(e.message || e) }));
     return true; // async response
   }
+  if (msg && msg.type === "setPeriod") {
+    const m = Math.max(1, parseInt(msg.periodMin, 10) || DEFAULT_PERIOD_MIN);
+    chrome.storage.local.set({ periodMin: m });
+    chrome.alarms.create(ALARM, { periodInMinutes: m });
+    sendResponse({ ok: true });
+    return; // sync response
+  }
+  if (msg && msg.type === "testDiscord") {
+    (async () => {
+      const { discordEveryone } = await chrome.storage.local.get("discordEveryone");
+      await postDiscord(msg.webhook, Object.assign({
+        username: "Bounty Report Tracker",
+        embeds: [{
+          title: "Test message",
+          color: 0x50c878,
+          description: "Your Discord webhook works. Report changes will appear here.",
+          footer: { text: "Bounty Report Tracker" },
+          timestamp: new Date().toISOString()
+        }]
+      }, mentionPart(discordEveryone !== false)));
+    })()
+      .then(() => sendResponse({ ok: true }))
+      .catch(e => sendResponse({ ok: false, error: String(e.message || e) }));
+    return true; // async response
+  }
 });
 
-// ---- This function is serialized and executed in the hackerone.com page. ----
-// It must be fully self-contained (no references to outer scope).
-async function pageFetchReports() {
-  const meta = document.querySelector('meta[name="csrf-token"]');
-  if (!meta || !meta.content) {
-    return { error: "Not logged in to HackerOne (no CSRF meta on page)." };
-  }
-  const csrf = meta.content;
-
-  async function gql(query, variables) {
-    const res = await fetch("/graphql", {
-      method: "POST",
-      credentials: "include",
-      headers: { "content-type": "application/json", "x-csrf-token": csrf },
-      body: JSON.stringify({ query, variables })
-    });
-    if (!res.ok) return { __http: res.status };
-    const j = await res.json();
-    if (j.errors && j.errors.length) return { __gql: j.errors.map(e => e.message).join("; ") };
-    return j.data;
-  }
-
-  const me = await gql("query { me { _id username } }", {});
-  if (me.__http) return { error: "HTTP " + me.__http + " on /graphql" };
-  if (me.__gql) return { error: me.__gql };
-  if (!me || !me.me) return { error: "Invalid session (me == null). Sign in to HackerOne." };
-
-  // latest_activity_at is always null on H1's API; latest_public_activity_at holds the
-  // real "last public activity" value. Aliased so the rest of the code is untouched.
-  const q = "query Tracker($rid: Int!) {" +
-    " reports(first: 100, where: { reporter: { id: { _eq: $rid } } }) {" +
-    " edges { node { _id title substate url submitted_at" +
-    " latest_activity_at: latest_public_activity_at" +
-    " report_pending_party_last_activity team { handle name } } } } }";
-  const rid = parseInt(me.me._id, 10);
-  const data = await gql(q, { rid });
-  if (data.__http) return { error: "HTTP " + data.__http + " on /graphql" };
-  if (data.__gql) return { error: data.__gql };
-
-  const reports = (data.reports.edges || []).map(e => e.node);
-  // Sort newest submission first (client-side; avoids schema-specific order_by).
-  reports.sort((a, b) => String(b.submitted_at || "").localeCompare(String(a.submitted_at || "")));
-  return { me: me.me, reports };
-}
-
+// Resolves true when the tab finishes loading, false on timeout. NEVER rejects,
+// so no "tab load timeout" rejection can ever escape as an uncaught promise error.
 function waitForComplete(tabId, timeoutMs = 15000) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     let done = false;
-    const finish = (fn, arg) => {
+    const finish = (val) => {
       if (done) return;
       done = true;
       clearTimeout(timer);
       chrome.tabs.onUpdated.removeListener(listener);
-      fn(arg);
+      resolve(val);
     };
-    const timer = setTimeout(() => finish(reject, new Error("tab load timeout")), timeoutMs);
+    const timer = setTimeout(() => finish(false), timeoutMs);
     function listener(id, info) {
-      if (id === tabId && info.status === "complete") finish(resolve);
+      if (id === tabId && info.status === "complete") finish(true);
     }
     chrome.tabs.onUpdated.addListener(listener);
-    chrome.tabs.get(tabId).then(t => { if (t.status === "complete") finish(resolve); }).catch(() => {});
+    chrome.tabs.get(tabId).then(t => { if (t && t.status === "complete") finish(true); }).catch(() => {});
   });
 }
 
-// Run pageFetchReports inside a hackerone.com tab (reuse one if open, else open a hidden one).
-async function runInH1Tab() {
-  const tabs = await chrome.tabs.query({ url: "https://hackerone.com/*" });
-  let tab = tabs.find(t => t.status === "complete") || tabs[0];
+// Run a provider's pageFetch inside one of its tabs (reuse one if open, else
+// open a hidden one).
+async function runInProviderTab(provider) {
+  const tabs = await chrome.tabs.query({ url: provider.tabMatch });
+  // Only reuse a tab that is already fully loaded. Waiting on an existing tab that
+  // is stuck in "loading" (a long-polling SPA) is what caused "tab load timeout";
+  // instead we open our own controlled tab when none is ready.
+  let tab = tabs.find(t => t.status === "complete");
   let created = false;
 
   if (!tab) {
-    tab = await chrome.tabs.create({ url: "https://hackerone.com/bugs", active: false });
+    tab = await chrome.tabs.create({ url: provider.tabUrl, active: false });
     created = true;
+    // Best-effort wait (resolves false on timeout). We try to inject regardless;
+    // executeScript gives a clearer error if the page really is not ready.
+    await waitForComplete(tab.id, 20000);
   }
   try {
-    if (tab.status !== "complete") await waitForComplete(tab.id);
-    const [inj] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: pageFetchReports });
+    const [inj] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: provider.pageFetch });
     const result = inj && inj.result;
-    if (!result) throw new Error("No result from page (injection blocked?).");
+    if (!result) throw new Error("No result from " + provider.name + " page (injection blocked?).");
     if (result.error) throw new Error(result.error);
     return result;
   } finally {
@@ -114,10 +114,12 @@ async function runInH1Tab() {
   }
 }
 
+function keyOf(r) { return r.platform + ":" + r._id; }
+
 function snapshotOf(reports) {
   const snap = {};
   for (const r of reports) {
-    snap[r._id] = {
+    snap[keyOf(r)] = {
       substate: r.substate,
       pend: r.report_pending_party_last_activity || null,
       latest: r.latest_activity_at || null
@@ -129,24 +131,26 @@ function snapshotOf(reports) {
 function diff(prev, reports) {
   const changes = [];
   for (const r of reports) {
-    const before = prev[r._id];
+    const k = keyOf(r);
+    const before = prev[k];
+    const base = { key: k, platform: r.platform, id: r._id, title: r.title, url: r.url };
     if (!before) {
-      changes.push({ id: r._id, title: r.title, kind: "new", detail: substateLabel(r.substate) });
+      changes.push({ ...base, kind: "new", detail: substateLabel(r.substate) });
       continue;
     }
     if (before.substate !== r.substate) {
       changes.push({
-        id: r._id, title: r.title, kind: "substate",
+        ...base, kind: "substate",
         detail: substateLabel(before.substate) + " -> " + substateLabel(r.substate)
       });
     } else if ((before.pend || null) !== (r.report_pending_party_last_activity || null)) {
       changes.push({
-        id: r._id, title: r.title, kind: "internal",
+        ...base, kind: "internal",
         detail: "internal activity updated (" + relLabel(r.report_pending_party_last_activity) + ")"
       });
     } else if ((before.latest || null) !== (r.latest_activity_at || null)) {
       changes.push({
-        id: r._id, title: r.title, kind: "activity",
+        ...base, kind: "activity",
         detail: "new activity (" + relLabel(r.latest_activity_at) + ")"
       });
     }
@@ -156,9 +160,28 @@ function diff(prev, reports) {
 
 export async function check() {
   try {
-    const { me, reports } = await runInH1Tab();
-    const snap = snapshotOf(reports);
+    const { enabledPlatforms } = await chrome.storage.local.get("enabledPlatforms");
+    const providers = providersFor(enabledPlatforms || DEFAULT_PLATFORMS);
 
+    let reports = [];
+    const me = {};
+    const errors = [];
+    for (const p of providers) {
+      try {
+        const res = await runInProviderTab(p);
+        if (res.me) me[p.id] = res.me;
+        reports = reports.concat(res.reports || []);
+      } catch (e) {
+        errors.push(p.name + ": " + String(e.message || e));
+      }
+    }
+
+    // If every enabled provider failed, surface the error like before.
+    if (!reports.length && errors.length) {
+      throw new Error(errors.join(" | "));
+    }
+
+    const snap = snapshotOf(reports);
     const stored = await chrome.storage.local.get(["lastSnapshot", "initialized"]);
     const prev = stored.lastSnapshot || {};
     const changes = stored.initialized ? diff(prev, reports) : [];
@@ -168,16 +191,19 @@ export async function check() {
       reports,
       me,
       lastCheck: Date.now(),
-      lastError: null,
+      lastError: errors.length ? errors.join(" | ") : null,
       initialized: true
     });
 
     chrome.action.setBadgeBackgroundColor({ color: "#d9534f" });
     chrome.action.setBadgeText({ text: changes.length ? String(changes.length) : "" });
 
-    if (changes.length) notify(changes);
+    if (changes.length) {
+      notify(changes);
+      sendDiscordForChanges(changes);
+    }
 
-    return { reports, changes, me };
+    return { reports, changes, me, errors };
   } catch (e) {
     await chrome.storage.local.set({ lastError: String(e.message || e), lastCheck: Date.now() });
     throw e;
@@ -186,9 +212,9 @@ export async function check() {
 
 function notify(changes) {
   const title = changes.length === 1
-    ? "1 change on your H1 reports"
-    : changes.length + " changes on your H1 reports";
-  const lines = changes.slice(0, 5).map(c => `#${c.id} — ${c.detail}`);
+    ? "1 change on your reports"
+    : changes.length + " changes on your reports";
+  const lines = changes.slice(0, 5).map(c => `[${platformBadge(c.platform)}] #${c.id} — ${c.detail}`);
   if (changes.length > 5) lines.push("…and " + (changes.length - 5) + " more");
   chrome.notifications.create("h1-" + Date.now(), {
     type: "basic",
@@ -199,7 +225,73 @@ function notify(changes) {
   });
 }
 
-// Open the report when the notification is clicked.
+// ---- Discord webhook ----
+
+// Adds an @everyone ping (and the matching allowed_mentions) when enabled.
+function mentionPart(everyone) {
+  return everyone
+    ? { content: "@everyone", allowed_mentions: { parse: ["everyone"] } }
+    : { allowed_mentions: { parse: [] } };
+}
+
+async function postDiscord(webhook, payload) {
+  if (!webhook || !/^https:\/\/discord\.com\/api\/webhooks\//.test(webhook)) {
+    throw new Error("Invalid Discord webhook URL.");
+  }
+  const res = await fetch(webhook, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("Discord HTTP " + res.status);
+}
+
+const DISCORD_GREEN = 0x50c878;
+const DISCORD_ORANGE = 0xe08a00;
+
+function shortId(c) {
+  return c.platform === "bugcrowd" ? String(c.id).slice(0, 8) : String(c.id);
+}
+
+// One rich embed summarizing the changes (Discord "Format 8" style).
+function buildChangesEmbed(changes) {
+  const blocks = changes.slice(0, 10).map(c => {
+    const t = (c.title || "").length > 100 ? c.title.slice(0, 97) + "..." : (c.title || "open");
+    const head = "**[" + platformBadge(c.platform) + "] #" + shortId(c) + "** — " + c.detail;
+    const body = c.url ? "[" + t + "](" + c.url + ")" : t;
+    return head + "\n" + body;
+  });
+  if (changes.length > 10) blocks.push("...and " + (changes.length - 10) + " more");
+
+  const allBc = changes.every(c => c.platform === "bugcrowd");
+  const title = changes.length === 1
+    ? "1 change on your bounty reports"
+    : changes.length + " changes on your bounty reports";
+
+  return {
+    title,
+    color: allBc ? DISCORD_ORANGE : DISCORD_GREEN,
+    description: blocks.join("\n\n"),
+    footer: { text: "Bounty Report Tracker" },
+    timestamp: new Date().toISOString()
+  };
+}
+
+async function sendDiscordForChanges(changes) {
+  try {
+    const { discordWebhook, discordEveryone } = await chrome.storage.local.get(["discordWebhook", "discordEveryone"]);
+    if (!discordWebhook) return;
+    await postDiscord(discordWebhook, Object.assign({
+      username: "Bounty Report Tracker",
+      embeds: [buildChangesEmbed(changes)]
+    }, mentionPart(discordEveryone !== false)));
+  } catch (e) {
+    // Non-fatal: a broken webhook should never break the check itself.
+    console.warn("Discord webhook failed:", String(e.message || e));
+  }
+}
+
+// Open the first report when the notification is clicked.
 chrome.notifications.onClicked.addListener(async () => {
   const { reports } = await chrome.storage.local.get("reports");
   const url = reports && reports[0] ? reports[0].url : "https://hackerone.com/bugs";

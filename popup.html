@@ -6,19 +6,62 @@
 </head>
 <body>
   <header>
-    <span id="user" class="user">…</span>
+    <div class="brand">
+      <img src="icon128.png" class="logo" alt="" />
+      <div class="brand-text">
+        <span class="app-name">Bounty Tracker</span>
+        <span id="user" class="user">…</span>
+      </div>
+    </div>
     <div class="controls">
-      <select id="sort" title="Sort by">
-        <option value="internal_desc">Last internal activity</option>
-        <option value="submitted_desc">Newest</option>
-        <option value="submitted_asc">Oldest</option>
-        <option value="activity_desc">Last public activity</option>
-        <option value="status">Status</option>
-        <option value="id_desc">Report #</option>
-      </select>
-      <button id="refresh" title="Refresh">↻</button>
+      <div class="select-wrap">
+        <select id="sort" title="Sort by">
+          <option value="internal_desc">Last internal activity</option>
+          <option value="submitted_desc">Newest</option>
+          <option value="submitted_asc">Oldest</option>
+          <option value="activity_desc">Last public activity</option>
+          <option value="status">Status</option>
+          <option value="id_desc">Report #</option>
+        </select>
+      </div>
+      <button id="settings" class="icon-btn" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </button>
+      <button id="refresh" class="icon-btn" title="Refresh" aria-label="Refresh">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      </button>
     </div>
   </header>
+
+  <div id="settings-panel" class="settings-panel" hidden>
+    <div class="settings-title">Platforms to track</div>
+    <label class="opt"><input type="checkbox" id="plat-hackerone" value="hackerone" /> <span>HackerOne</span></label>
+    <label class="opt"><input type="checkbox" id="plat-bugcrowd" value="bugcrowd" /> <span>Bugcrowd</span></label>
+    <div class="settings-hint">Make sure you are signed in to each selected platform in a tab.</div>
+
+    <div class="settings-title mt">Auto check</div>
+    <div class="select-wrap sel-full">
+      <select id="period" title="How often to check">
+        <option value="15">Every 15 minutes</option>
+        <option value="30">Every 30 minutes</option>
+        <option value="60">Every hour</option>
+        <option value="120">Every 2 hours</option>
+        <option value="360">Every 6 hours</option>
+      </select>
+    </div>
+    <div class="settings-hint">How often the extension checks your reports in the background.</div>
+
+    <div class="settings-title mt">Discord webhook</div>
+    <input type="text" id="discord-webhook" class="wh-input" placeholder="https://discord.com/api/webhooks/..." spellcheck="false" autocomplete="off" />
+    <div class="wh-row">
+      <button id="discord-test" class="wh-btn">Send test</button>
+      <span id="discord-status" class="settings-hint inline"></span>
+    </div>
+    <label class="opt opt-mt"><input type="checkbox" id="discord-everyone" checked /> <span>Mention @everyone</span></label>
+    <div class="settings-hint">When a report changes, a summary is posted to this Discord channel. Leave empty to disable.</div>
+  </div>
+
+  <div id="platform-filters" class="filters platform-filters"></div>
   <div id="filters" class="filters"></div>
   <div id="status" class="status"></div>
   <div id="list" class="list"></div>

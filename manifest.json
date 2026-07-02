@@ -1,17 +1,21 @@
 {
   "manifest_version": 3,
-  "name": "H1 Report Tracker",
-  "version": "1.1.0",
-  "description": "Tracks the status of my HackerOne reports and alerts when something changes.",
+  "name": "Bounty Report Tracker",
+  "version": "1.4.1",
+  "description": "Tracks the status and internal activity of my HackerOne and Bugcrowd reports and alerts when something changes.",
   "permissions": ["storage", "alarms", "notifications", "scripting", "tabs"],
-  "host_permissions": ["https://hackerone.com/*"],
+  "host_permissions": [
+    "https://hackerone.com/*",
+    "https://bugcrowd.com/*",
+    "https://discord.com/api/webhooks/*"
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "H1 Report Tracker",
+    "default_title": "Bounty Report Tracker",
     "default_icon": {
       "16": "icon16.png",
       "48": "icon48.png",
