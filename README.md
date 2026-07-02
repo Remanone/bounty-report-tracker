@@ -52,9 +52,9 @@ you cannot get anywhere else.
 The extension supports **HackerOne** and **Bugcrowd**. Open the settings panel in the popup
 (the gear icon) and tick the platforms you want to track. You can run one or both at once.
 
-- **HackerOne**: uses the `report_pending_party_last_activity` field, the exact "Last internal
+- <picture><source media="(prefers-color-scheme: dark)" srcset="docs/h1-white.png"><img src="docs/h1-black.png" height="15" alt=""></picture> **HackerOne**: uses the `report_pending_party_last_activity` field, the exact "Last internal
   activity" value shown in the HackerOne UI.
-- **Bugcrowd**: submissions are read from your logged-in Bugcrowd researcher session. Bugcrowd
+- <img src="docs/bc.png" height="15" alt=""> **Bugcrowd**: submissions are read from your logged-in Bugcrowd researcher session. Bugcrowd
   does not expose a separate internal-activity timestamp, so on Bugcrowd cards the internal
   value shows as a dash. The extension still tracks each submission's substate and its
   `last_activity_date`, and alerts you when either moves.
