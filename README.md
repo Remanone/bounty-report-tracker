@@ -13,20 +13,18 @@ reason to exist is **internal activity**.
 > no API keys to paste. The only outbound request the extension can make is to your own Discord
 > webhook, and only if you choose to set one.
 
-<table align="center">
+<table align="center" width="100%">
   <tr>
-    <td align="center"><b>HackerOne + Bugcrowd</b></td>
-    <td align="center"><b>HackerOne</b></td>
-    <td align="center"><b>Bugcrowd</b></td>
+    <td align="center" width="33%"><b>HackerOne</b></td>
+    <td align="center" width="33%"><b>Bugcrowd</b></td>
+    <td align="center" width="33%"><b>HackerOne + Bugcrowd</b></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/popup-both.png" alt="Popup showing both HackerOne and Bugcrowd reports" width="230"></td>
-    <td align="center"><img src="docs/popup-hackerone.png" alt="Popup filtered to HackerOne reports" width="230"></td>
-    <td align="center"><img src="docs/popup-bugcrowd.png" alt="Popup filtered to Bugcrowd reports" width="230"></td>
+    <td align="center"><img src="docs/popup-hackerone.png" alt="Popup filtered to HackerOne reports" width="100%"></td>
+    <td align="center"><img src="docs/popup-bugcrowd.png" alt="Popup filtered to Bugcrowd reports" width="100%"></td>
+    <td align="center"><img src="docs/popup-both.png" alt="Popup showing both HackerOne and Bugcrowd reports" width="100%"></td>
   </tr>
 </table>
-
-> The screenshots above use fictional sample data, not real reports.
 
 ## Why "internal activity"
 
