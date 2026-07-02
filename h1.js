@@ -1,6 +1,4 @@
-// Shared display helpers (used by both popup and background).
-// The actual data fetch lives in providers.js as self-contained pageFetch()
-// functions, each injected into its platform's own tab (same origin).
+// Shared display helpers used by both popup and background.
 
 // Calendar-day difference (local), matching the UI "N days ago" display.
 export function daysAgo(iso) {
@@ -21,7 +19,6 @@ export function relLabel(iso) {
   return d + " days ago";
 }
 
-// Human-readable substate label, across both platforms.
 export function substateLabel(s) {
   const map = {
     // HackerOne
@@ -44,7 +41,6 @@ export function substateLabel(s) {
   return map[s] || s;
 }
 
-// Short badge and display name per platform.
 export function platformBadge(id) {
   return id === "bugcrowd" ? "BC" : "H1";
 }

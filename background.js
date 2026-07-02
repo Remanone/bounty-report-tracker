@@ -1,20 +1,17 @@
-// Service worker: periodic check + diff + notifications, across platforms.
-// Each provider's fetch runs INSIDE a tab on that platform's own origin (same
-// origin) via chrome.scripting.executeScript, because the sites reject API calls
-// coming from the extension origin.
+// Each provider's fetch runs inside a tab on that platform's own origin via
+// chrome.scripting.executeScript, because the sites reject API calls coming
+// from the extension origin.
 import { relLabel, substateLabel, platformBadge } from "./h1.js";
 import { providersFor, DEFAULT_PLATFORMS } from "./providers.js";
 
-const ALARM = "h1-check";
+const ALARM = "bounty-check";
 const DEFAULT_PERIOD_MIN = 60;
 
-// Version marker: if you see this in the service worker console, the new code is
-// running and any old error in the errors panel is a stale cached entry.
-console.log("Bounty Report Tracker service worker loaded: v1.4.1");
+console.log("Bounty Report Tracker service worker loaded: v1.4.2");
 
-// Fire-and-forget checks: swallow the rejection so a platform that is simply not
-// logged in does not surface as an uncaught error in the extensions panel. The
-// real reason is stored in lastError and shown in the popup.
+// Swallow the rejection so a platform that is simply not logged in does not
+// surface as an uncaught error in the extensions panel; the real reason is
+// stored in lastError and shown in the popup.
 function backgroundCheck() {
   check().catch(e => console.debug("Background check failed:", String(e && e.message || e)));
 }
@@ -31,7 +28,6 @@ chrome.alarms.onAlarm.addListener(a => {
   if (a.name === ALARM) backgroundCheck();
 });
 
-// Lets the popup trigger a check and get the result.
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg && msg.type === "checkNow") {
     check().then(r => sendResponse({ ok: true, ...r }))
@@ -65,8 +61,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
 });
 
-// Resolves true when the tab finishes loading, false on timeout. NEVER rejects,
-// so no "tab load timeout" rejection can ever escape as an uncaught promise error.
+// Resolves true when the tab loads, false on timeout. NEVER rejects, so no
+// "tab load timeout" rejection can escape as an uncaught promise error.
 function waitForComplete(tabId, timeoutMs = 15000) {
   return new Promise((resolve) => {
     let done = false;
@@ -86,21 +82,19 @@ function waitForComplete(tabId, timeoutMs = 15000) {
   });
 }
 
-// Run a provider's pageFetch inside one of its tabs (reuse one if open, else
-// open a hidden one).
 async function runInProviderTab(provider) {
   const tabs = await chrome.tabs.query({ url: provider.tabMatch });
-  // Only reuse a tab that is already fully loaded. Waiting on an existing tab that
-  // is stuck in "loading" (a long-polling SPA) is what caused "tab load timeout";
-  // instead we open our own controlled tab when none is ready.
+  // Only reuse a fully loaded tab. Waiting on one stuck in "loading" (a
+  // long-polling SPA) is what caused "tab load timeout"; instead we open our
+  // own controlled tab when none is ready.
   let tab = tabs.find(t => t.status === "complete");
   let created = false;
 
   if (!tab) {
     tab = await chrome.tabs.create({ url: provider.tabUrl, active: false });
     created = true;
-    // Best-effort wait (resolves false on timeout). We try to inject regardless;
-    // executeScript gives a clearer error if the page really is not ready.
+    // Best-effort wait; we inject regardless, as executeScript gives a clearer
+    // error if the page really is not ready.
     await waitForComplete(tab.id, 20000);
   }
   try {
@@ -176,7 +170,7 @@ export async function check() {
       }
     }
 
-    // If every enabled provider failed, surface the error like before.
+    // If every enabled provider failed, surface the error.
     if (!reports.length && errors.length) {
       throw new Error(errors.join(" | "));
     }
@@ -218,16 +212,13 @@ function notify(changes) {
   if (changes.length > 5) lines.push("…and " + (changes.length - 5) + " more");
   chrome.notifications.create("h1-" + Date.now(), {
     type: "basic",
-    iconUrl: "icon128.png",
+    iconUrl: "assets/icon128.png",
     title,
     message: lines.join("\n"),
     priority: 2
   });
 }
 
-// ---- Discord webhook ----
-
-// Adds an @everyone ping (and the matching allowed_mentions) when enabled.
 function mentionPart(everyone) {
   return everyone
     ? { content: "@everyone", allowed_mentions: { parse: ["everyone"] } }
@@ -253,7 +244,6 @@ function shortId(c) {
   return c.platform === "bugcrowd" ? String(c.id).slice(0, 8) : String(c.id);
 }
 
-// One rich embed summarizing the changes (Discord "Format 8" style).
 function buildChangesEmbed(changes) {
   const blocks = changes.slice(0, 10).map(c => {
     const t = (c.title || "").length > 100 ? c.title.slice(0, 97) + "..." : (c.title || "open");
@@ -291,7 +281,6 @@ async function sendDiscordForChanges(changes) {
   }
 }
 
-// Open the first report when the notification is clicked.
 chrome.notifications.onClicked.addListener(async () => {
   const { reports } = await chrome.storage.local.get("reports");
   const url = reports && reports[0] ? reports[0].url : "https://hackerone.com/bugs";

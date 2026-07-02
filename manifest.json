@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bounty Report Tracker",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Tracks the status and internal activity of my HackerOne and Bugcrowd reports and alerts when something changes.",
   "permissions": ["storage", "alarms", "notifications", "scripting", "tabs"],
   "host_permissions": [
@@ -17,14 +17,14 @@
     "default_popup": "popup.html",
     "default_title": "Bounty Report Tracker",
     "default_icon": {
-      "16": "icon16.png",
-      "48": "icon48.png",
-      "128": "icon128.png"
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
     }
   },
   "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
   }
 }

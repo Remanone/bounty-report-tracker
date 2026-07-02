@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.png" alt="Bounty Report Tracker" width="160" />
+  <img src="assets/logo.png" alt="Bounty Report Tracker" width="160" />
 </p>
 
 <h1 align="center">Bounty Report Tracker</h1>
@@ -19,8 +19,8 @@ reason to exist is **internal activity**.
     <td align="center" width="50%"><b>If you pick just one</b></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/popup-both.png" alt="Popup showing both HackerOne and Bugcrowd reports" width="100%"></td>
-    <td align="center"><img src="docs/popup-bugcrowd.png" alt="Popup with a single platform selected" width="100%"></td>
+    <td align="center"><img src="assets/popup-both.png" alt="Popup showing both HackerOne and Bugcrowd reports" width="100%"></td>
+    <td align="center"><img src="assets/popup-bugcrowd.png" alt="Popup with a single platform selected" width="100%"></td>
   </tr>
 </table>
 
@@ -36,7 +36,7 @@ In the HackerOne UI this is the **"Last internal activity"** field, exposed in t
 `report_pending_party_last_activity`. It often moves days before any public reply appears,
 so it is an early signal that someone is actually looking at your report.
 
-<img src="docs/last-internal-activity.png" alt="HackerOne 'Last internal activity: 1 day ago' field with its exact timestamp on hover" width="320">
+<img src="assets/last-internal-activity.png" alt="HackerOne 'Last internal activity: 1 day ago' field with its exact timestamp on hover" width="320">
 
 This is the field on a HackerOne report. It updates silently, with no email and no
 notification, which is why the extension polls it for you.
@@ -52,9 +52,9 @@ you cannot get anywhere else.
 The extension supports **HackerOne** and **Bugcrowd**. Open the settings panel in the popup
 (the gear icon) and tick the platforms you want to track. You can run one or both at once.
 
-- <picture><source media="(prefers-color-scheme: dark)" srcset="docs/h1-white.png"><img src="docs/h1-black.png" height="15" alt=""></picture> **HackerOne**: uses the `report_pending_party_last_activity` field, the exact "Last internal
+- <picture><source media="(prefers-color-scheme: dark)" srcset="assets/h1-white.png"><img src="assets/h1-black.png" height="15" alt=""></picture> **HackerOne**: uses the `report_pending_party_last_activity` field, the exact "Last internal
   activity" value shown in the HackerOne UI.
-- <img src="docs/bc.png" height="15" alt=""> **Bugcrowd**: submissions are read from your logged-in Bugcrowd researcher session. Bugcrowd
+- <img src="assets/bc.png" height="15" alt=""> **Bugcrowd**: submissions are read from your logged-in Bugcrowd researcher session. Bugcrowd
   does not expose a separate internal-activity timestamp, so on Bugcrowd cards the internal
   value shows as a dash. The extension still tracks each submission's substate and its
   `last_activity_date`, and alerts you when either moves.
@@ -115,7 +115,7 @@ Works on **Chrome** and **Brave** (and any Chromium based browser such as Edge o
 1. Open `chrome://extensions` (on Brave use `brave://extensions`).
 2. Enable **Developer mode** (top right).
 3. Click **Load unpacked**.
-4. Select the cloned `h1-tracker` folder.
+4. Select the cloned `bounty-report-tracker` folder.
 5. Open the popup, click the gear icon, and tick the platforms you track.
 6. Make sure you are **signed in** to each selected platform in a tab.
 
@@ -134,7 +134,7 @@ error, open that platform, sign in, then press the refresh button.
 
 Open the settings panel with the gear icon in the popup.
 
-<p align="center"><img src="docs/popup-settings.png" alt="Settings panel with platforms, auto check interval, and Discord webhook" width="300"></p>
+<p align="center"><img src="assets/popup-settings.png" alt="Settings panel with platforms, auto check interval, and Discord webhook" width="300"></p>
 
 - **Platforms to track.** Tick HackerOne, Bugcrowd, or both. Only ticked platforms are checked.
 - **Auto check.** Choose how often the extension checks your reports in the background, from

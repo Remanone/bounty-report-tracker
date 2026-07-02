@@ -31,7 +31,7 @@ const ORDER = [
   "out-of-scope", "wont-fix", "duplicate", "spam"
 ];
 
-// Selected substates / platforms. Empty set = show all.
+// Empty set = show all.
 let selected = new Set();
 let platformSel = new Set();
 let sortBy = "internal_desc";
@@ -66,7 +66,7 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 
-// Platform filter chips (only shown when reports span more than one platform).
+// Only shown when reports span more than one platform.
 function buildPlatformFilters(reports) {
   const counts = {};
   for (const r of reports) counts[r.platform] = (counts[r.platform] || 0) + 1;
@@ -95,7 +95,6 @@ function buildPlatformFilters(reports) {
   }
 }
 
-// Substate filter chips, built from the substates present in the data.
 function buildFilters(reports) {
   const counts = {};
   for (const r of reports) counts[r.substate] = (counts[r.substate] || 0) + 1;
@@ -219,7 +218,7 @@ async function doCheck() {
     if (resp.errors && resp.errors.length) txt += " ⚠ " + resp.errors.join(" | ");
     statusEl.textContent = txt;
     if (resp.errors && resp.errors.length) statusEl.className = "status error";
-    chrome.action.setBadgeText({ text: "" }); // seen
+    chrome.action.setBadgeText({ text: "" });
   } catch (e) {
     statusEl.className = "status error";
     statusEl.textContent = "⚠ " + (e.message || e);
@@ -234,7 +233,7 @@ settingsBtn.addEventListener("click", () => {
   settingsPanel.hidden = !settingsPanel.hidden;
 });
 
-// Persist the Discord webhook live, on every keystroke, so it is never lost.
+// Persist on every keystroke so the webhook is never lost.
 webhookInput.addEventListener("input", () => {
   chrome.storage.local.set({ [WEBHOOK_KEY]: webhookInput.value.trim() });
 });
@@ -264,12 +263,10 @@ webhookTestBtn.addEventListener("click", async () => {
   }
 });
 
-// Persist the @everyone toggle.
 everyoneBox.addEventListener("change", () => {
   chrome.storage.local.set({ [EVERYONE_KEY]: everyoneBox.checked });
 });
 
-// Change the background auto-check interval.
 periodEl.addEventListener("change", async () => {
   const m = parseInt(periodEl.value, 10) || 60;
   await chrome.storage.local.set({ [PERIOD_KEY]: m });
@@ -282,7 +279,6 @@ sortEl.addEventListener("change", async () => {
   renderList();
 });
 
-// Wire platform checkboxes in the settings panel.
 for (const p of PROVIDERS) {
   const box = document.querySelector("#plat-" + p.id);
   if (!box) continue;
@@ -297,7 +293,6 @@ for (const p of PROVIDERS) {
   });
 }
 
-// Init: load persisted settings, then data, then maybe refresh if stale.
 (async () => {
   const store = await chrome.storage.local.get([FILTER_KEY, PLATFORM_FILTER_KEY, SORT_KEY, PLATFORMS_KEY, WEBHOOK_KEY, EVERYONE_KEY, PERIOD_KEY, "lastCheck"]);
   selected = new Set(store[FILTER_KEY] || []);

@@ -1,9 +1,8 @@
-// Provider registry. Each provider knows how to fetch the current user's
-// reports from ONE platform. The pageFetch() function is serialized and run
-// INSIDE a tab on that platform's own origin via chrome.scripting.executeScript,
-// because both sites return errors for API calls coming from the extension
-// origin. Each pageFetch MUST be fully self-contained (no outer-scope refs) and
-// returns a normalized shape:
+// Each provider fetches the current user's reports from one platform. pageFetch()
+// is serialized and run inside a tab on that platform's own origin via
+// chrome.scripting.executeScript, because both sites return errors for API calls
+// coming from the extension origin. Each pageFetch MUST be fully self-contained
+// (no outer-scope refs) and returns a normalized shape:
 //
 //   { me: { platform, username }, reports: [ normalizedReport, ... ] }
 //   normalizedReport = {
@@ -13,9 +12,6 @@
 //     team: { handle, name } | null
 //   }
 
-// ---------------------------------------------------------------------------
-// HackerOne
-// ---------------------------------------------------------------------------
 async function hackeronePageFetch() {
   const meta = document.querySelector('meta[name="csrf-token"]');
   if (!meta || !meta.content) {
@@ -41,8 +37,8 @@ async function hackeronePageFetch() {
   if (me.__gql) return { error: me.__gql };
   if (!me || !me.me) return { error: "Invalid session (me == null). Sign in to HackerOne." };
 
-  // latest_activity_at is always null on H1's API; latest_public_activity_at holds
-  // the real "last public activity" value. Aliased so the shape is uniform.
+  // latest_activity_at is always null on H1's API; latest_public_activity_at
+  // holds the real value, so it is aliased to keep the shape uniform.
   const q = "query Tracker($rid: Int!) {" +
     " reports(first: 100, where: { reporter: { id: { _eq: $rid } } }) {" +
     " edges { node { _id title substate url submitted_at" +
@@ -71,15 +67,11 @@ async function hackeronePageFetch() {
   return { me: { platform: "hackerone", username: me.me.username }, reports };
 }
 
-// ---------------------------------------------------------------------------
-// Bugcrowd
-// ---------------------------------------------------------------------------
-// Confirmed against the live researcher submissions inbox. The list endpoint
-// returns an array under one of these top-level keys, each item shaped like the
-// SAMPLE ITEM captured during discovery. Bugcrowd does NOT expose an internal-only
-// activity timestamp the way HackerOne does, so `report_pending_party_last_activity`
-// stays null for Bugcrowd; `last_activity_date` is used as the public-activity signal
-// (it moves on any activity, program-side included).
+// The list endpoint returns an array under one of several top-level keys.
+// Bugcrowd does NOT expose an internal-only activity timestamp the way HackerOne
+// does, so `report_pending_party_last_activity` stays null for Bugcrowd;
+// `last_activity_date` is used as the public-activity signal (it moves on any
+// activity, program-side included).
 async function bugcrowdPageFetch() {
   const meta = document.querySelector('meta[name="csrf-token"]');
   const csrf = meta ? meta.content : null;
@@ -143,8 +135,6 @@ async function bugcrowdPageFetch() {
   const username = (list[0] && list[0].username) || "bugcrowd";
   return { me: { platform: "bugcrowd", username }, reports };
 }
-
-// ---------------------------------------------------------------------------
 
 export const PROVIDERS = [
   {

@@ -49,7 +49,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- Header ---------- */
 header {
   display: flex;
   align-items: center;
@@ -120,7 +119,6 @@ select#sort:focus, select#period:focus { outline: none; border-color: var(--acce
 #refresh.spin svg { animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---------- Settings panel ---------- */
 .settings-panel {
   padding: 14px;
   border-bottom: 1px solid var(--border-soft);
@@ -180,7 +178,6 @@ select#sort:focus, select#period:focus { outline: none; border-color: var(--acce
 .wh-btn:active { transform: scale(.96); }
 .wh-btn:disabled { opacity: .55; cursor: default; filter: none; }
 
-/* ---------- Filters ---------- */
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -191,7 +188,7 @@ select#sort:focus, select#period:focus { outline: none; border-color: var(--acce
 }
 .filters:empty { display: none; }
 
-/* Platform toggles: visually distinct from the substate pills below. */
+/* Visually distinct from the substate pills below. */
 .platform-filters {
   gap: 8px;
   padding: 10px 14px;
@@ -246,7 +243,6 @@ select#sort:focus, select#period:focus { outline: none; border-color: var(--acce
 }
 .chip.plat-bugcrowd.on .cnt { color: var(--bc); background: rgba(240, 151, 58, .14); }
 
-/* ---------- Status ---------- */
 .status {
   padding: 8px 14px 4px;
   font-size: 11.5px;
@@ -258,7 +254,6 @@ select#sort:focus, select#period:focus { outline: none; border-color: var(--acce
 .status:empty { display: none; }
 .status.error { color: var(--danger); }
 
-/* ---------- List ---------- */
 .list {
   flex: 1;
   min-height: 0;
@@ -297,7 +292,6 @@ select#sort:focus, select#period:focus { outline: none; border-color: var(--acce
 .card.changed::before { background: var(--danger); }
 .card.changed { border-color: rgba(240, 98, 93, .35); }
 
-/* ---------- Group headers ---------- */
 .plat-head {
   display: flex; align-items: center; gap: 8px;
   padding: 14px 6px 4px;
@@ -373,7 +367,6 @@ select#sort:focus, select#period:focus { outline: none; border-color: var(--acce
 .pbadge-hackerone { background: rgba(90, 209, 154, .16); color: var(--h1); }
 .pbadge-bugcrowd { background: rgba(240, 151, 58, .16); color: var(--bc); }
 
-/* Platform logo icons (replace the H1/BC text badges). */
 .picon {
   width: 16px; height: 16px;
   object-fit: contain;
@@ -384,10 +377,8 @@ select#sort:focus, select#period:focus { outline: none; border-color: var(--acce
 .plat-head .picon { margin-right: 0; }
 .chip.plat .picon { margin-right: 0; width: 15px; height: 15px; }
 
-/* title text needs to truncate after the badge */
 .card .title { white-space: nowrap; }
 
-/* ---------- Footer / empty ---------- */
 footer {
   padding: 9px 14px;
   border-top: 1px solid var(--border-soft);
