@@ -140,6 +140,7 @@ export const PROVIDERS = [
   {
     id: "hackerone",
     name: "HackerOne",
+    origin: "https://hackerone.com/",
     tabMatch: "https://hackerone.com/*",
     tabUrl: "https://hackerone.com/bugs",
     pageFetch: hackeronePageFetch
@@ -147,6 +148,7 @@ export const PROVIDERS = [
   {
     id: "bugcrowd",
     name: "Bugcrowd",
+    origin: "https://bugcrowd.com/",
     tabMatch: "https://bugcrowd.com/*",
     tabUrl: "https://bugcrowd.com/submissions",
     pageFetch: bugcrowdPageFetch

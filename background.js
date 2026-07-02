@@ -7,7 +7,7 @@ import { providersFor, DEFAULT_PLATFORMS } from "./providers.js";
 const ALARM = "bounty-check";
 const DEFAULT_PERIOD_MIN = 60;
 
-console.log("Bounty Report Tracker service worker loaded: v1.4.2");
+console.log("Bounty Report Tracker service worker loaded: v1.4.3");
 
 // Swallow the rejection so a platform that is simply not logged in does not
 // surface as an uncaught error in the extensions panel; the real reason is
@@ -98,7 +98,23 @@ async function runInProviderTab(provider) {
     await waitForComplete(tab.id, 20000);
   }
   try {
-    const [inj] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: provider.pageFetch });
+    // If the tab redirected off the platform origin (e.g. Bugcrowd bounces to its
+    // OAuth login host when the session is gone), we cannot and should not inject
+    // there. Report a clean "sign in" message instead of the raw host error.
+    const cur = await chrome.tabs.get(tab.id).catch(() => null);
+    if (cur && cur.url && !cur.url.startsWith(provider.origin)) {
+      throw new Error("Not signed in to " + provider.name + ". Open " + provider.name + " in a tab, sign in, then refresh.");
+    }
+    let inj;
+    try {
+      [inj] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: provider.pageFetch });
+    } catch (e) {
+      const m = String(e && e.message || e);
+      if (/Cannot access contents of|Cannot access a chrome|must request permission/i.test(m)) {
+        throw new Error("Not signed in to " + provider.name + ". Open " + provider.name + " in a tab, sign in, then refresh.");
+      }
+      throw e;
+    }
     const result = inj && inj.result;
     if (!result) throw new Error("No result from " + provider.name + " page (injection blocked?).");
     if (result.error) throw new Error(result.error);
