@@ -20,6 +20,7 @@ const sortEl = $("#sort");
 
 const FILTER_KEY = "filterSubstates";
 const PLATFORM_FILTER_KEY = "platformFilter";
+const BOUNTY_FILTER_KEY = "bountyOnly";
 const SORT_KEY = "sortBy";
 const PLATFORMS_KEY = "enabledPlatforms";
 const WEBHOOK_KEY = "discordWebhook";
@@ -34,6 +35,7 @@ const ORDER = [
 // Empty set = show all.
 let selected = new Set();
 let platformSel = new Set();
+let bountyOnly = false;
 let sortBy = "internal_desc";
 let enabledPlatforms = DEFAULT_PLATFORMS.slice();
 let currentReports = [];
@@ -105,6 +107,26 @@ function buildFilters(reports) {
     .concat(present.filter(s => !ORDER.includes(s)));
 
   filtersEl.innerHTML = "";
+
+  // A "Bounty awarded" toggle, shown only when at least one report has a bounty.
+  const bountyCount = reports.filter(r => Number(r.bounty) > 0).length;
+  if (bountyCount) {
+    const label = document.createElement("label");
+    label.className = "chip bounty" + (bountyOnly ? " on" : "");
+    label.innerHTML =
+      `<input type="checkbox" ${bountyOnly ? "checked" : ""} />` +
+      `<span>Bounty awarded</span>` +
+      `<span class="cnt">${bountyCount}</span>`;
+    const input = label.querySelector("input");
+    input.addEventListener("change", async () => {
+      bountyOnly = input.checked;
+      label.classList.toggle("on", input.checked);
+      await chrome.storage.local.set({ [BOUNTY_FILTER_KEY]: bountyOnly });
+      renderList();
+    });
+    filtersEl.appendChild(label);
+  }
+
   for (const s of ordered) {
     const on = selected.has(s);
     const label = document.createElement("label");
@@ -158,6 +180,7 @@ function makeCard(r) {
 function renderList() {
   let rows = currentReports;
   if (platformSel.size) rows = rows.filter(r => platformSel.has(r.platform));
+  if (bountyOnly) rows = rows.filter(r => Number(r.bounty) > 0);
   if (selected.size) rows = rows.filter(r => selected.has(r.substate));
   rows = sortRows(rows);
 
@@ -298,9 +321,10 @@ for (const p of PROVIDERS) {
 }
 
 (async () => {
-  const store = await chrome.storage.local.get([FILTER_KEY, PLATFORM_FILTER_KEY, SORT_KEY, PLATFORMS_KEY, WEBHOOK_KEY, EVERYONE_KEY, PERIOD_KEY, "lastCheck"]);
+  const store = await chrome.storage.local.get([FILTER_KEY, PLATFORM_FILTER_KEY, BOUNTY_FILTER_KEY, SORT_KEY, PLATFORMS_KEY, WEBHOOK_KEY, EVERYONE_KEY, PERIOD_KEY, "lastCheck"]);
   selected = new Set(store[FILTER_KEY] || []);
   platformSel = new Set(store[PLATFORM_FILTER_KEY] || []);
+  bountyOnly = store[BOUNTY_FILTER_KEY] === true;
   sortBy = store[SORT_KEY] || "internal_desc";
   enabledPlatforms = (store[PLATFORMS_KEY] && store[PLATFORMS_KEY].length) ? store[PLATFORMS_KEY] : DEFAULT_PLATFORMS.slice();
   webhookInput.value = store[WEBHOOK_KEY] || "";

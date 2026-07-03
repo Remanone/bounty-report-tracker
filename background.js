@@ -7,7 +7,7 @@ import { providersFor, DEFAULT_PLATFORMS } from "./providers.js";
 const ALARM = "bounty-check";
 const DEFAULT_PERIOD_MIN = 60;
 
-console.log("Bounty Report Tracker service worker loaded: v1.4.4");
+console.log("Bounty Report Tracker service worker loaded: v1.4.5");
 
 // Swallow the rejection so a platform that is simply not logged in does not
 // surface as an uncaught error in the extensions panel; the real reason is
