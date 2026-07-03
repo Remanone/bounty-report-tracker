@@ -1,13 +1,13 @@
 // Each provider's fetch runs inside a tab on that platform's own origin via
 // chrome.scripting.executeScript, because the sites reject API calls coming
 // from the extension origin.
-import { relLabel, substateLabel, platformBadge } from "./h1.js";
+import { relLabel, substateLabel, platformBadge, bountyLabel } from "./h1.js";
 import { providersFor, DEFAULT_PLATFORMS } from "./providers.js";
 
 const ALARM = "bounty-check";
 const DEFAULT_PERIOD_MIN = 60;
 
-console.log("Bounty Report Tracker service worker loaded: v1.4.3");
+console.log("Bounty Report Tracker service worker loaded: v1.4.4");
 
 // Swallow the rejection so a platform that is simply not logged in does not
 // surface as an uncaught error in the extensions panel; the real reason is
@@ -132,7 +132,8 @@ function snapshotOf(reports) {
     snap[keyOf(r)] = {
       substate: r.substate,
       pend: r.report_pending_party_last_activity || null,
-      latest: r.latest_activity_at || null
+      latest: r.latest_activity_at || null,
+      bounty: r.bounty || 0
     };
   }
   return snap;
@@ -147,6 +148,13 @@ function diff(prev, reports) {
     if (!before) {
       changes.push({ ...base, kind: "new", detail: substateLabel(r.substate) });
       continue;
+    }
+    // A bounty award is its own headline: reported alongside any state change.
+    if ((r.bounty || 0) > (before.bounty || 0)) {
+      changes.push({
+        ...base, kind: "bounty",
+        detail: "bounty awarded: " + (bountyLabel(r.bounty, r.bountyCurrency) || r.bounty)
+      });
     }
     if (before.substate !== r.substate) {
       changes.push({
@@ -255,6 +263,7 @@ async function postDiscord(webhook, payload) {
 
 const DISCORD_GREEN = 0x50c878;
 const DISCORD_ORANGE = 0xe08a00;
+const DISCORD_GOLD = 0xf1c40f;
 
 function shortId(c) {
   return c.platform === "bugcrowd" ? String(c.id).slice(0, 8) : String(c.id);
@@ -269,6 +278,7 @@ function buildChangesEmbed(changes) {
   });
   if (changes.length > 10) blocks.push("...and " + (changes.length - 10) + " more");
 
+  const hasBounty = changes.some(c => c.kind === "bounty");
   const allBc = changes.every(c => c.platform === "bugcrowd");
   const title = changes.length === 1
     ? "1 change on your bounty reports"
@@ -276,7 +286,7 @@ function buildChangesEmbed(changes) {
 
   return {
     title,
-    color: allBc ? DISCORD_ORANGE : DISCORD_GREEN,
+    color: hasBounty ? DISCORD_GOLD : allBc ? DISCORD_ORANGE : DISCORD_GREEN,
     description: blocks.join("\n\n"),
     footer: { text: "Bounty Report Tracker" },
     timestamp: new Date().toISOString()

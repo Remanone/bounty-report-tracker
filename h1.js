@@ -41,6 +41,18 @@ export function substateLabel(s) {
   return map[s] || s;
 }
 
+const CURRENCY_SYMBOL = { USD: "$", EUR: "€", GBP: "£", CAD: "$", AUD: "$" };
+
+// Returns a compact money label ("$500", "€1,250") or null when there is no bounty.
+export function bountyLabel(amount, currency) {
+  const n = Number(amount);
+  if (!n || n <= 0) return null;
+  const cur = currency || "USD";
+  const sym = CURRENCY_SYMBOL[cur];
+  const val = (n % 1 === 0 ? n : Number(n.toFixed(2))).toLocaleString("en-US");
+  return sym ? sym + val : val + " " + cur;
+}
+
 export function platformBadge(id) {
   return id === "bugcrowd" ? "BC" : "H1";
 }

@@ -69,9 +69,11 @@ For every one of your reports the extension records three things at each check:
 - **substate**: New, Pending program review, Triaged, Needs more info, Resolved, and so on.
 - **internal** (`report_pending_party_last_activity`): the "Last internal activity" timestamp.
 - **activity** (`latest_activity_at`): the last public activity timestamp.
+- **bounty**: the total amount awarded on the report.
 
-A change in any of the three is reported, but the internal one is the value you would
-otherwise have no way of seeing without opening each report by hand.
+A change in any of these is reported, but the internal one is the value you would
+otherwise have no way of seeing without opening each report by hand. When a bounty lands,
+the change is highlighted (a gold pill in the popup, a gold embed in Discord).
 
 ## How it works
 
@@ -97,13 +99,14 @@ Click the toolbar icon to open the list. Each card shows:
 
 - the report title and its number,
 - the current substate,
+- the **bounty** amount, when one has been awarded,
 - **activity**: last public activity (`latest_activity_at`),
 - **internal**: last internal activity (`report_pending_party_last_activity`).
 
 Controls:
 
 - **Sort** by last internal activity (the default), newest, oldest, last public activity,
-  status, or report number.
+  status, bounty, or report number.
 - **Filter chips** to show only certain substates (for example only Pending program review).
 - Cards that changed since the last check are highlighted, and a **CHANGED** badge is shown.
 - Clicking a card opens that report.

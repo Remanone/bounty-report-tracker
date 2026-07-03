@@ -9,6 +9,8 @@
 //     platform, _id, title, substate, url, submitted_at,
 //     latest_activity_at,                     // last PUBLIC activity
 //     report_pending_party_last_activity,     // last INTERNAL activity
+//     bounty,                                 // total awarded amount (number) or null
+//     bountyCurrency,                         // ISO code, e.g. "USD", or null
 //     team: { handle, name } | null
 //   }
 
@@ -60,9 +62,36 @@ async function hackeronePageFetch() {
       submitted_at: n.submitted_at,
       latest_activity_at: n.latest_activity_at,
       report_pending_party_last_activity: n.report_pending_party_last_activity,
+      bounty: null,
+      bountyCurrency: null,
       team: n.team ? { handle: n.team.handle, name: n.team.name } : null
     };
   });
+
+  // Bounties are fetched in a separate best-effort query: if this field shape
+  // ever changes, the main report list still renders, just without amounts.
+  try {
+    const bq = "query Bounties($rid: Int!) {" +
+      " reports(first: 100, where: { reporter: { id: { _eq: $rid } } }) {" +
+      " edges { node { _id bounties(first: 25) { edges { node { awarded_amount awarded_bonus_amount } } } } } } }";
+    const bd = await gql(bq, { rid });
+    if (bd && !bd.__http && !bd.__gql && bd.reports) {
+      const totals = {};
+      for (const e of (bd.reports.edges || [])) {
+        const n = e.node;
+        let total = 0;
+        for (const be of ((n.bounties && n.bounties.edges) || [])) {
+          total += parseFloat(be.node.awarded_amount || 0) || 0;
+          total += parseFloat(be.node.awarded_bonus_amount || 0) || 0;
+        }
+        totals[String(n._id)] = total;
+      }
+      for (const r of reports) {
+        if (totals[r._id] > 0) { r.bounty = totals[r._id]; r.bountyCurrency = "USD"; }
+      }
+    }
+  } catch (e) { /* bounty is optional */ }
+
   reports.sort((a, b) => String(b.submitted_at || "").localeCompare(String(a.submitted_at || "")));
   return { me: { platform: "hackerone", username: me.me.username }, reports };
 }
@@ -111,9 +140,21 @@ async function bugcrowdPageFetch() {
     return { error: "Bugcrowd: could not load submissions (" + lastErr + ")." };
   }
 
+  function toAmount(v) {
+    if (v == null) return null;
+    const n = parseFloat(String(v).replace(/[^0-9.]/g, ""));
+    return n > 0 ? n : null;
+  }
+
   const reports = list.map(s => {
     const path = s.submission_url || (s.reference_number ? "/submissions/" + s.reference_number : "");
     const raw = String(s.substate || "").toLowerCase().replace(/_/g, "-").replace(/[^a-z-]/g, "");
+    const bounty = toAmount(
+      s.amount != null ? s.amount
+      : s.monetary_reward != null ? s.monetary_reward
+      : s.reward_amount != null ? s.reward_amount
+      : s.total_rewarded_amount
+    );
     return {
       platform: "bugcrowd",
       _id: String(s.reference_number || path.split("/").pop() || ""),
@@ -124,6 +165,8 @@ async function bugcrowdPageFetch() {
       latest_activity_at: s.last_activity_date || s.researcher_updated_at || null,
       // Bugcrowd's list API has no internal-only activity timestamp.
       report_pending_party_last_activity: null,
+      bounty,
+      bountyCurrency: bounty ? "USD" : null,
       team: {
         handle: s.engagement_name || null,
         name: s.program_name || s.engagement_name || null

@@ -1,4 +1,4 @@
-import { relLabel, substateLabel, platformBadge, platformName } from "./h1.js";
+import { relLabel, substateLabel, platformBadge, platformName, bountyLabel } from "./h1.js";
 import { PROVIDERS, DEFAULT_PLATFORMS } from "./providers.js";
 
 const $ = sel => document.querySelector(sel);
@@ -49,6 +49,7 @@ function sortRows(rows) {
     case "activity_desc": r.sort((a, b) => cmpStr(b.latest_activity_at, a.latest_activity_at)); break;
     case "internal_desc": r.sort((a, b) => cmpStr(b.report_pending_party_last_activity, a.report_pending_party_last_activity)); break;
     case "status": r.sort((a, b) => (ORDER.indexOf(a.substate) - ORDER.indexOf(b.substate)) || cmpStr(b.submitted_at, a.submitted_at)); break;
+    case "bounty_desc": r.sort((a, b) => (Number(b.bounty || 0) - Number(a.bounty || 0)) || cmpStr(b.submitted_at, a.submitted_at)); break;
     case "id_desc": r.sort((a, b) => Number(b._id) - Number(a._id)); break;
     case "submitted_desc":
     default: r.sort((a, b) => cmpStr(b.submitted_at, a.submitted_at)); break;
@@ -135,10 +136,13 @@ function makeCard(r) {
   const internalSpan = r.platform === "bugcrowd"
     ? ""
     : `<span>internal: ${relLabel(r.report_pending_party_last_activity)}</span>`;
+  const money = bountyLabel(r.bounty, r.bountyCurrency);
+  const bountyBadge = money ? `<span class="badge-bounty">${escapeHtml(money)}</span>` : "";
   card.innerHTML = `
     <div class="top">
       <span class="title"><img class="picon" src="assets/${r.platform}.png" alt="${escapeHtml(platformName(r.platform))}" /><span class="ttext">${escapeHtml(r.title || "(untitled)")}</span></span>
       <span class="top-right">
+        ${bountyBadge}
         ${changed ? '<span class="badge-changed">CHANGED</span>' : ""}
         <span class="id" title="#${escapeHtml(String(r._id))}">#${escapeHtml(idText)}</span>
       </span>
